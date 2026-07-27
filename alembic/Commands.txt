@@ -1,0 +1,9 @@
+Alembic Commands 
+
+alembic revision --autogenerate -m "create users table"
+
+alembic upgrade head
+
+
+
+uv pip freeze > requirements.txt          

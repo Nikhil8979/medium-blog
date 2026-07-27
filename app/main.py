@@ -1,0 +1,64 @@
+from fastapi import FastAPI,status,HTTPException,Request
+from app.routers import auth
+from app.routers import post
+from fastapi.exceptions import RequestValidationError
+from sqlalchemy.exc import IntegrityError
+from app.utils.responses import api_error
+app = FastAPI(title="Medium Backend API")
+
+
+
+@app.exception_handler(HTTPException)
+async def http_exception_handler(request: Request, exc: HTTPException):
+    return api_error(
+        message=str(exc.detail),
+        code=exc.status_code,
+        errors=[{"field": None, "message": str(exc.detail)}],
+    )
+
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    formatted = []
+
+    for err in exc.errors():
+        loc_items = [str(x) for x in err.get("loc", [])]
+
+        if loc_items and loc_items[0] in {"body", "query", "path"}:
+            loc_items = loc_items[1:]
+
+        field = ".".join(loc_items) if loc_items else None
+        msg = err.get("msg", "Invalid input")
+
+        formatted.append({"field": field, "message": msg})
+
+    return api_error(
+        message="Validation failed",
+        code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+        errors=formatted,
+    )
+
+@app.exception_handler(IntegrityError)
+async def integrity_exception_handler(request: Request, exc: IntegrityError):
+    # handles DB unique constraint etc.
+    return api_error(
+        message="Database integrity error",
+        code=status.HTTP_409_CONFLICT,
+        errors=[{"field": None, "message": "Resource already exists or violates constraint"}],
+    )
+
+
+@app.exception_handler(Exception)
+async def unhandled_exception_handler(request: Request, exc: Exception):
+    # fallback for unexpected errors
+    return api_error(
+        message="Internal server error",
+        code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        errors=[{"field": None, "message": str(exc)}],
+    )
+app.include_router(auth.router,prefix="/api/v1")
+app.include_router(post.router,prefix="/api/v1")
+
+@app.get("/")
+async def root():
+    return {"message":"Hello World"}

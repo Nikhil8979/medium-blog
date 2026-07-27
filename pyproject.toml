@@ -1,0 +1,8 @@
+[tool.fastapi]
+entrypoint = "app.main:app"
+
+[dependency-groups]
+dev = [
+    "pwdlib[argon2]>=0.3.0",
+    "pyjwt>=2.13.0",
+]

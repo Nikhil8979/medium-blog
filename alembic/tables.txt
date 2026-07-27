@@ -1,0 +1,75 @@
+import os
+import functions_framework
+import jwt
+from google.cloud import bigquery
+
+bq = bigquery.Client(project=os.environ["GCP_PROJECT_ID"])
+
+PROJECT_ID   = os.environ["GCP_PROJECT_ID"]
+BQ_DATASET   = os.environ["BQ_DATASET"]
+TABLES_TABLE = os.environ["TABLES_TABLE"]
+ACCESS_TABLE = os.environ["ACCESS_TABLE"]
+JWT_SECRET   = os.environ["JWT_SECRET"]
+
+def validate_token(request) -> dict:
+    auth_header = request.headers.get("X-Forwarded-Authorization", "") or \
+                  request.headers.get("Authorization", "")
+    if not auth_header.startswith("Bearer "):
+        return None
+    token = auth_header.split(" ")[1]
+    try:
+        payload = jwt.decode(token, JWT_SECRET, algorithms=["HS256"])
+        return payload
+    except jwt.ExpiredSignatureError:
+        return None
+    except jwt.InvalidTokenError:
+        return None
+
+@functions_framework.http
+def get_tables(request):
+    if request.method == "GET" and request.path == "/health":
+        return {"status": "ok"}, 200
+
+    if request.method != "GET":
+        return {"error": "Method not allowed"}, 405
+
+    user = validate_token(request)
+    if not user:
+        return {"error": "Unauthorized"}, 401
+
+    user_id = user.get("user_id")
+    if not user_id:
+        return {"error": "Invalid token"}, 401
+
+    query = f"""
+        SELECT
+            t.table_id,
+            t.table_name,
+            t.display_name,
+            t.dataset
+        FROM `{PROJECT_ID}.{BQ_DATASET}.{TABLES_TABLE}` t
+        INNER JOIN `{PROJECT_ID}.{BQ_DATASET}.{ACCESS_TABLE}` a
+            ON t.table_id = a.table_id
+        WHERE a.user_id = @user_id
+        ORDER BY t.display_name ASC
+    """
+    config = bigquery.QueryJobConfig(query_parameters=[
+        bigquery.ScalarQueryParameter("user_id", "STRING", user_id),
+    ])
+    results = bq.query(query, job_config=config).result()
+
+    tables = [
+        {
+            "table_id":    row.table_id,
+            "table_name":  row.table_name,
+            "display_name": row.display_name,
+            "dataset":     row.dataset
+        }
+        for row in results
+    ]
+
+    return {
+        "user_id": user_id,
+        "count":   len(tables),
+        "tables":  tables
+    }, 200
