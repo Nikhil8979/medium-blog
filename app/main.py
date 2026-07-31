@@ -1,9 +1,11 @@
+import time
 from fastapi import FastAPI,status,HTTPException,Request
 from app.routers import auth
 from app.routers import post
 from fastapi.exceptions import RequestValidationError
 from sqlalchemy.exc import IntegrityError
 from app.utils.responses import api_error
+
 app = FastAPI(title="Medium Backend API")
 
 
@@ -56,6 +58,15 @@ async def unhandled_exception_handler(request: Request, exc: Exception):
         code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         errors=[{"field": None, "message": str(exc)}],
     )
+    
+@app.middleware("http")
+async def add_proccess_time_header(request:Request,call_next):
+    start_time = time.perf_counter()
+    response = await call_next(request)
+    process_time = time.perf_counter() - start_time
+    response.headers["X-Process-Time"] = str(process_time)
+    return response
+
 app.include_router(auth.router,prefix="/api/v1")
 app.include_router(post.router,prefix="/api/v1")
 

@@ -22,3 +22,10 @@ class PostResponse(BaseModel):
     updated_at: datetime
 
     model_config = {"from_attributes": True}
+    
+
+class PostUpdate(BaseModel):
+    title:Optional[str] = Field(None,min_length=3,max_length=220)
+    content:Optional[str] = Field(None,min_length=3,max_length=5000)
+    image_url:Optional[str] = None
+    status:Optional[PostStatus] = None    

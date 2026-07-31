@@ -5,16 +5,19 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.database.deps import get_db
 from app.services.auth import AuthService
 from app.utils.responses import api_success
+from app.schemas.auth import Token
+from fastapi.security import  OAuth2PasswordRequestForm
+from typing import Annotated
 router = APIRouter(prefix="/auth",tags=["Auth"])
 
 def get_auth_service(db:AsyncSession = Depends(get_db))->AuthService:
     return AuthService(db)
     
 @router.post("/login",status_code=status.HTTP_200_OK)
-async def login(data:LoginRequest,service:AuthService = Depends(get_auth_service)):
+async def login(data: Annotated[OAuth2PasswordRequestForm, Depends()],service:AuthService = Depends(get_auth_service)):
+    data = LoginRequest(email=data.username,password=data.password)
     result = await service.login(data)
-    return api_success(data=result,message="Login successful",code=status.HTTP_200_OK)
-
+    return Token(access_token=result.access_token, token_type=result.token_type)
 @router.post("/register",status_code=status.HTTP_200_OK)
 async def register(data:RegisterRequest,service:AuthService = Depends(get_auth_service)):
     result = await service.register(data)
