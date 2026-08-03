@@ -1,5 +1,5 @@
 from fastapi import APIRouter,Depends,status
-from app.schemas.post import PostCreate,PostResponse,PostUpdate
+from app.schemas.post import PostCreate,PostResponse,PostUpdate,PostsQuery
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.database.deps import get_db
 from app.services.post import PostService
@@ -25,8 +25,8 @@ async def get_post(post_id:int,service:PostServiceDeps,current_user:CurrentUser)
     return api_success(data=PostResponse.model_validate(result),message="Post retrieved successfully",code=status.HTTP_200_OK)
 
 @router.get("/")
-async def get_posts(service:PostServiceDeps,current_user:CurrentUser):
-    result = await service.get_posts(current_user.id);
+async def get_posts(postQuery:Annotated[PostsQuery,Depends()],service:Annotated[PostServiceDeps,Depends(get_post_service)],current_user:Annotated[CurrentUser,Depends(get_current_user)]):
+    result = await service.get_posts(current_user.id,postQuery);
     return api_success(data=[PostResponse.model_validate(post) for post in result],message="Posts retrieved successfully",code=status.HTTP_200_OK)
     
 @router.patch("/{post_id}")

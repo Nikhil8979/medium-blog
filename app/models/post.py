@@ -3,6 +3,7 @@ from sqlalchemy.orm import Mapped,mapped_column,relationship
 from sqlalchemy import Integer,String,ForeignKey,Enum as SqlEnum,DateTime,func,Text
 from enum import Enum
 from datetime import datetime
+from sqlalchemy.dialects.postgresql import JSONB
 class PostStatus(str,Enum):
     DRAFT = "draft"
     PUBLISHED = "published"
@@ -14,7 +15,7 @@ class Post(Base):
     id:Mapped[int] = mapped_column(Integer,primary_key=True,index=True)
     title:Mapped[str] = mapped_column(String(220),nullable=False)
     content:Mapped[str] = mapped_column(Text,nullable=False)
-    image_url:Mapped[str] = mapped_column(String,nullable=True)
+    image_url:Mapped[str | None] = mapped_column(String,nullable=True)
     owner_id:Mapped[int] = mapped_column(ForeignKey("users.id",ondelete="CASCADE"),nullable=False,index=True)
     slug:Mapped[str] = mapped_column(String(220),unique=True,nullable=False,index=True)
     status: Mapped[PostStatus] = mapped_column(
@@ -33,6 +34,8 @@ class Post(Base):
         DateTime(timezone=True),
         nullable=True
     )
+    
+    tags:Mapped[list[str]] = mapped_column(JSONB,nullable=False,default=[])
     created_at:Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,
