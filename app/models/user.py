@@ -27,4 +27,5 @@ class User(Base):
         onupdate=func.now(),
         nullable=False
     )
+    liked_posts:Mapped[list["PostLikes"]] = relationship(back_populates="user",cascade="all, delete-orphan")
     

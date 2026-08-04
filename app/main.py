@@ -5,7 +5,7 @@ from app.routers import post
 from fastapi.exceptions import RequestValidationError
 from sqlalchemy.exc import IntegrityError
 from app.utils.responses import api_error
-
+from app.routers import post_like
 app = FastAPI(title="Medium Backend API")
 
 
@@ -69,6 +69,7 @@ async def add_proccess_time_header(request:Request,call_next):
 
 app.include_router(auth.router,prefix="/api/v1")
 app.include_router(post.router,prefix="/api/v1")
+app.include_router(post_like.router,prefix="/api/v1")
 
 @app.get("/")
 async def root():

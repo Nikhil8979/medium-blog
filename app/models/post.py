@@ -47,4 +47,5 @@ class Post(Base):
         server_default=func.now(),
         onupdate=func.now()
     )
+    likes:Mapped[list["PostLikes"]] = relationship(back_populates="post",cascade="all,delete-orphan")
    

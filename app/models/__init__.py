@@ -1,3 +1,4 @@
 from .user import User
 from .post import Post
-__all__ = ["User","Post"]
+from .post_likes import PostLikes
+__all__ = ["User","Post","PostLikes"]

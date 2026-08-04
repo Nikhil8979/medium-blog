@@ -1,15 +1,12 @@
 from fastapi import APIRouter,Depends,status
 from app.schemas.post import PostCreate,PostResponse,PostUpdate,PostsQuery
-from sqlalchemy.ext.asyncio import AsyncSession
-from app.database.deps import get_db
 from app.services.post import PostService
 from typing import Annotated
 from app.utils.responses import api_success
 from app.core.security import get_current_user
-from app.schemas.auth import TokenData
+from app.dependencies import DbSession,CurrentUser
 router = APIRouter(prefix="/posts",tags=["Posts"])
-DbSession = Annotated[AsyncSession,Depends(get_db)]
-CurrentUser = Annotated[TokenData,Depends(get_current_user)]
+
 def get_post_service(db:DbSession)->PostService:
     return PostService(db)
     
